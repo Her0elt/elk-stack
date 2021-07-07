@@ -1,0 +1,38 @@
+version: '3.5'
+
+services:
+  keystore:
+    build:
+      context: elasticsearch/
+      args:
+        ELK_VERSION: ${ELK_VERSION}
+    command: bash /setup/setup-keystore.sh
+    user: "0"
+    volumes:
+      - ./secrets:/secrets
+      - ./setup/:/setup/
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
+  certs:
+    build:
+      context: elasticsearch/
+      args:
+        ELK_VERSION: ${ELK_VERSION}
+    command: bash /setup/setup-certs.sh
+    user: "0"
+    volumes:
+      - ./secrets:/secrets
+      - ./setup/:/setup/
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+  loaddata:
+    image: elasticdump/elasticsearch-dump
+    environment:
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      FILE: ${FILE}
+      URI: ${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}
+    command: bash -c 'elasticdump --input=secrets/${FILE} --output=http://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@elasticsearch:9200/integration --type=data'
+    volumes:
+      - ./secrets:/secrets
